@@ -87,7 +87,12 @@ module Qu
       end
 
       def failed(payload, error)
-        jobs('failed').insert(payload_attributes(payload).merge(:queue => payload.queue))
+        error_hash = {
+          :exception => error.class.to_s,
+          :error => error.to_s,
+          :backtrace => Array(error.backtrace).join("\n")
+        }
+        jobs('failed').insert(payload_attributes(payload).merge(:queue => payload.queue).merge(:error => error_hash))
       end
 
       def completed(payload)
