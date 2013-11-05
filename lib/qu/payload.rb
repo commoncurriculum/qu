@@ -9,6 +9,7 @@ module Qu
     def initialize(options = {})
       super
       self.args ||= []
+      self.errors ||= []
     end
 
     def klass
@@ -17,6 +18,10 @@ module Qu
 
     def queue
       (klass.instance_variable_get(:@queue) || 'default').to_s
+    end
+
+    def max_retries
+      (klass.instance_variable_get(:@max_retries) || 1)
     end
 
     def perform

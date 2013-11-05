@@ -92,7 +92,16 @@ module Qu
           :error => error.to_s,
           :backtrace => Array(error.backtrace).join("\n")
         }
-        jobs('failed').insert(payload_attributes(payload).merge(:queue => payload.queue).merge(:error => error_hash))
+
+        payload.errors << error_hash
+        if payload.errors.length < (payload.max_retries + 1)
+          logger.debug "Retry Number #{payload.errors.length} on job #{payload.id}"
+          logger.debug "Requeueing Job #{payload.id}"
+          release(payload)
+        else
+          logger.warn "Failed Job #{payload.id}"
+          jobs('failed').insert(payload_attributes(payload).merge(:queue => payload.queue))
+        end
       end
 
       def completed(payload)
@@ -121,7 +130,7 @@ module Qu
 
     protected
       def payload_attributes(payload)
-        {:_id => payload.id, :klass => payload.klass.to_s, :args => payload.args}
+        {:_id => payload.id, :klass => payload.klass.to_s, :args => payload.args, :errors => payload.errors}
       end
 
       def id_for_payload(payload)
